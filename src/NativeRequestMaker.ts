@@ -1,11 +1,12 @@
 import RequestMaker, {RequestMakerEvents} from './RequestMaker'
-import { EventEmitter as EE } from 'ee-ts'
+import {EventEmitter as EE} from 'ee-ts'
 import fetch, {Response} from 'node-fetch'
 import * as https from 'node:https'
-import {promises as fs} from 'node:fs'
+import * as fs from 'node:fs'
 import * as path from 'node:path'
-import { WebSocket } from 'ws'
-import { Tail } from 'tail'
+import {WebSocket} from 'ws'
+import {Tail} from 'tail'
+import * as process from 'node:process'
 
 interface LockfileData {
     name: string
@@ -19,12 +20,44 @@ export class NativeRequestMaker extends EE<RequestMakerEvents> implements Reques
     private readonly localAgent: https.Agent
     private lockfileData?: LockfileData
     private logTail?: Tail
+    private watcher: fs.FSWatcher
+    private readonly lockfilePath: string
 
     constructor() {
         super()
         this.localAgent = new https.Agent({
             rejectUnauthorized: false
         })
+        this.lockfilePath = path.join(process.env['LOCALAPPDATA']!, 'Riot Games\\Riot Client\\Config\\lockfile');
+        this.watcher = fs.watch(path.dirname(this.lockfilePath), async (eventType, fileName) => {
+            if(fileName !== 'lockfile') return
+
+            if(eventType === 'rename' && this.localReady) {
+                this.lockfileData = undefined
+                this.emit('localStatusChange', false)
+            } else if(eventType === 'change' && !this.localReady) {
+                try {
+                    await this.tryLoadLockfile()
+                } catch(ignored) {}
+            }
+        })
+
+        try {
+            this.tryLoadLockfile()
+        } catch(ignored) {}
+    }
+
+    private async tryLoadLockfile() {
+        const contents = await fs.promises.readFile(this.lockfilePath, 'utf8')
+        const split = contents.split(':')
+        this.lockfileData = {
+            name: split[0],
+            pid: parseInt(split[1]),
+            port: parseInt(split[2]),
+            password: split[3],
+            protocol: split[4]
+        }
+        this.emit('localStatusChange', true)
     }
 
     override _onEventHandled(key: string) {
@@ -56,7 +89,7 @@ export class NativeRequestMaker extends EE<RequestMakerEvents> implements Reques
     }
 
     getLog(): Promise<string> {
-        return fs.readFile(path.join(process.env['LOCALAPPDATA']!, '/VALORANT/Saved/Logs/ShooterGame.log'), 'utf-8')
+        return fs.promises.readFile(path.join(process.env['LOCALAPPDATA']!, '/VALORANT/Saved/Logs/ShooterGame.log'), 'utf-8')
     }
 
     get localReady(): boolean {
