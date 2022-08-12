@@ -1,1 +1,2 @@
-export * from "./BridgedRequestMaker"
+export * from './BridgedRequestMaker'
+export * from './NativeRequestMaker'
