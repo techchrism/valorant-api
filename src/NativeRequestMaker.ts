@@ -5,6 +5,7 @@ import * as https from 'node:https'
 import {promises as fs} from 'node:fs'
 import * as path from 'node:path'
 import { WebSocket } from 'ws'
+import { Tail } from 'tail'
 
 interface LockfileData {
     name: string
@@ -17,12 +18,33 @@ interface LockfileData {
 export class NativeRequestMaker extends EE<RequestMakerEvents> implements RequestMaker {
     private readonly localAgent: https.Agent
     private lockfileData?: LockfileData
+    private logTail?: Tail
 
     constructor() {
         super()
         this.localAgent = new https.Agent({
             rejectUnauthorized: false
         })
+    }
+
+    override _onEventHandled(key: string) {
+        if(key === 'logMessage') {
+            this.logTail = new Tail(path.join(process.env['LOCALAPPDATA']!, '/VALORANT/Saved/Logs/ShooterGame.log'), {
+                useWatchFile: true,
+                fsWatchOptions: {
+                    interval: 250
+                }
+            })
+            this.logTail.on('line', line => {
+                this.emit('logMessage', line)
+            })
+        }
+    }
+
+    override _onEventUnhandled(key: string) {
+        if(key === 'logMessage') {
+            this.logTail!.unwatch()
+        }
     }
 
     getLocalWebsocket(): Promise<WebSocket> {
