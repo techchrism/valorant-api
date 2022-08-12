@@ -205,7 +205,9 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
     /**
      * Connects to the status websocket after the bridge is connected and whitelisted
      * Resolves when the status websocket is connected and the first message is received
+     * Automatically closes the bridge websocket when the status websocket is connected
      * @param signal Optional signal to abort the connection
+     * @returns A promise that resolves with the initial status message
      */
     async connectToStatus(signal?: AbortSignal): Promise<StatusResponse> {
         return new Promise<StatusResponse>((resolve, reject) => {
@@ -265,8 +267,8 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
     /**
      * Connects to the api bridge root websocket
      * Resolves when whitelist data is received
-     * TODO: If whitelisted, the bridge websocket will automatically close
      * @param signal Optional abortion signal to stop connecting / waiting
+     * @returns Promise resolving with a boolean indicating whether the application is whitelisted
      */
     async connectToBridge(signal?: AbortSignal): Promise<boolean> {
         return new Promise<boolean>(async (resolve, reject) => {
