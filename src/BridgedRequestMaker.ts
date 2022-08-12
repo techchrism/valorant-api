@@ -117,7 +117,7 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
         return new WebSocket(`ws://${this.baseIP}/proxy/websocket`)
     }
 
-    async requestLocal(resource: string | Request, init?: Object): Promise<Response> {
+    async requestLocal(resource: string, init?: Object): Promise<Response> {
         if(!this.localReady) {
             throw new Error('Local not ready')
         }
@@ -125,7 +125,7 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
         return fetch(`http://${this.baseIP}/proxy/local/${resource}`, init)
     }
 
-    async requestRemoteGLZ(resource: string | Request, shard: string, region: string, init?: Object): Promise<Response> {
+    async requestRemoteGLZ(resource: string, shard: string, region: string, init?: Object): Promise<Response> {
         if(!this.remoteReady) {
             throw new Error('Remote not ready')
         }
@@ -133,7 +133,7 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
         return fetch(`http://${this.baseIP}/proxy/glz/${region}/${shard}/${resource}`, init)
     }
 
-    async requestRemotePD(resource: string | Request, shard: string, init?: Object): Promise<Response> {
+    async requestRemotePD(resource: string, shard: string, init?: Object): Promise<Response> {
         if(!this.remoteReady) {
             throw new Error('Remote not ready')
         }
@@ -159,7 +159,7 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
         }
     }
 
-    async requestRemoteShared(resource: string | Request, shard: string, init?: Object): Promise<Response> {
+    async requestRemoteShared(resource: string, shard: string, init?: Object): Promise<Response> {
         if(!this.remoteReady) {
             throw new Error('Remote not ready')
         }

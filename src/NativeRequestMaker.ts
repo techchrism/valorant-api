@@ -67,7 +67,7 @@ export class NativeRequestMaker extends EE<RequestMakerEvents> implements Reques
         return true
     }
 
-    requestLocal(resource: string | Request): Promise<Response> {
+    requestLocal(resource: string): Promise<Response> {
         if(!this.localReady) throw new Error('Local not ready')
 
         return fetch(`https://127.0.0.1:${this.lockfileData!.port}/${resource}`, {
@@ -78,15 +78,15 @@ export class NativeRequestMaker extends EE<RequestMakerEvents> implements Reques
         })
     }
 
-    requestRemoteGLZ(resource: string | Request, shard: string, region: string, init?: Object): Promise<Response> {
+    requestRemoteGLZ(resource: string, shard: string, region: string, init?: Object): Promise<Response> {
         return fetch(`https://glz-${region}-1.${shard}.a.pvp.net/${resource}`, init)
     }
 
-    requestRemotePD(resource: string | Request, shard: string, init?: Object): Promise<Response> {
+    requestRemotePD(resource: string, shard: string, init?: Object): Promise<Response> {
         return fetch(`https://pd.${shard}.a.pvp.net/${resource}`, init)
     }
 
-    requestRemoteShared(resource: string | Request, shard: string, init?: Object): Promise<Response> {
+    requestRemoteShared(resource: string, shard: string, init?: Object): Promise<Response> {
         return fetch(`https://shared.${shard}.a.pvp.net/${resource}`, init)
     }
 }

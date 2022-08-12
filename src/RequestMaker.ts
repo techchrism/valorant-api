@@ -61,7 +61,7 @@ export default interface RequestMaker<T = {}> extends EE<T & RequestMakerEvents>
      * @param resource The resource to request, appended to the local API base URL. Do not include a leading slash.
      * @returns A promise that resolves with the response object
      */
-    requestLocal(resource: string | Request): Promise<IsoResponse>
+    requestLocal(resource: string): Promise<IsoResponse>
 
     /**
      * Make a remote "glz" API request to the provided resource
@@ -74,7 +74,7 @@ export default interface RequestMaker<T = {}> extends EE<T & RequestMakerEvents>
      * @param init Optional init object for the fetch request
      * @returns A promise that resolves with the response object
      */
-    requestRemoteGLZ(resource: string | Request, shard: string, region: string, init?: Object): Promise<IsoResponse>
+    requestRemoteGLZ(resource: string, shard: string, region: string, init?: Object): Promise<IsoResponse>
 
     /**
      * Make a remote "pd" API request to the provided resource
@@ -85,7 +85,7 @@ export default interface RequestMaker<T = {}> extends EE<T & RequestMakerEvents>
      * @param init Optional init object for the fetch request
      * @returns A promise that resolves with the response object
      */
-    requestRemotePD(resource: string | Request, shard: string, init?: Object): Promise<IsoResponse>
+    requestRemotePD(resource: string, shard: string, init?: Object): Promise<IsoResponse>
 
     /**
      * Make a remote "shared" API request to the provided resource
@@ -96,5 +96,5 @@ export default interface RequestMaker<T = {}> extends EE<T & RequestMakerEvents>
      * @param init Optional init object for the fetch request
      * @returns A promise that resolves with the response object
      */
-    requestRemoteShared(resource: string | Request, shard: string, init?: Object): Promise<IsoResponse>
+    requestRemoteShared(resource: string, shard: string, init?: Object): Promise<IsoResponse>
 }
