@@ -81,6 +81,7 @@ export function instanceOfStatusResponse(object: any): object is StatusResponse 
 export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implements RequestMaker<BridgedRequestMakerEvents> {
     private _bridgeWebsocket?: WebSocket
     private _statusWebsocket?: WebSocket
+    private _logWebsocket?: WebSocket
     private _whitelisted: boolean = false
     private _localReady: boolean = false
 
@@ -138,6 +139,24 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
         }
 
         return fetch(`http://${this.baseIP}/proxy/pd/${shard}/${resource}`, init)
+    }
+
+    override _onEventHandled(key: string) {
+        if(key == 'logMessage') {
+            this._logWebsocket = new WebSocket(`ws://${this.baseIP}/proxy/log`)
+            this._logWebsocket.addEventListener('message', event => {
+                const lines = event.data.split('\n')
+                for(const line of lines) {
+                    this.emit('logMessage', line)
+                }
+            })
+        }
+    }
+
+    override _onEventUnhandled(key: string) {
+        if(key == 'logMessage') {
+            this._logWebsocket?.close()
+        }
     }
 
     async requestRemoteShared(resource: string | Request, shard: string, init?: Object): Promise<Response> {
