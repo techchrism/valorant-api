@@ -203,7 +203,8 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
     }
 
     /**
-     * Connects to the status websocket after the bridge is connected and whitelisted
+     * Connects to the status websocket
+     * Intended to be called after the bridge is connected and whitelisted
      * Resolves when the status websocket is connected and the first message is received
      * Automatically closes the bridge websocket when the status websocket is connected
      * @param signal Optional signal to abort the connection
@@ -211,12 +212,7 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
      */
     async connectToStatus(signal?: AbortSignal): Promise<StatusResponse> {
         return new Promise<StatusResponse>((resolve, reject) => {
-            if(signal !== undefined && signal.aborted) {
-                reject()
-                return
-            }
-
-            //TODO checks to ensure bridge is connected and whitelisted
+            if(signal?.aborted) return reject()
 
             // Begin connection to status websocket
             const ws = new WebSocket(`ws://${this.baseIP}/proxy/status`)
@@ -240,8 +236,6 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
                     }
                     this._bridgeWebsocket.close()
                     this._bridgeWebsocket = undefined
-                } else {
-                    //TODO Add warning for premature bridge closure
                 }
 
                 this.emit('remoteStatusChange', true)
