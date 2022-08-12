@@ -274,9 +274,9 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
 
             // Early message handling to handle behavior observed while testing
             // The message event could get called before the promise finished resolving
-            let earlyMessage: MessageEvent | undefined = undefined
+            const earlyMessages: MessageEvent[] = []
             const onEarlyMessage = (message: MessageEvent) => {
-                earlyMessage = message
+                earlyMessages.push(message)
             }
 
             try {
@@ -337,8 +337,8 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
             signal?.addEventListener('abort', onAbort)
 
             ws.removeEventListener('message', onEarlyMessage)
-            if(earlyMessage !== undefined) {
-                onMessage(earlyMessage)
+            for(const message of earlyMessages) {
+                onMessage(message)
             }
         })
     }
