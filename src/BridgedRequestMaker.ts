@@ -88,17 +88,11 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
     private _statusCloseListener?: EventListener
     private _statusMessageListener?: EventListener
 
-    readonly autoManage: boolean
     readonly baseIP: string
 
-    constructor(baseIP: string = 'localhost:12151', autoManage: boolean = false) {
+    constructor(baseIP: string = 'localhost:12151') {
         super()
-        this.autoManage = autoManage
         this.baseIP = baseIP
-    }
-
-    async startAutoManage(): Promise<void> {
-
     }
 
     get bridgeReady(): boolean {
@@ -160,21 +154,6 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
         }
 
         return (await fetch(`http://${this.baseIP}/proxy/log`)).text()
-    }
-
-    /**
-     * Goes through the entire connection process until the bridge status proxy connects and provides local ready status.
-     * Local ready status is used as a checkpoint because it is only available upon being whitelisted which indicates
-     * remote requests are ready. Additionally, a sustained connection to the status websocket gives indication for
-     * the bridge application closing.
-     * @param signal Optional abort signal
-     */
-    async fullConnectUntilReady(signal?: AbortSignal): Promise<boolean> {
-        const whitelisted = await this.waitForBridge(signal)
-        if(!whitelisted) {
-            //TODO wait until whitelisted?
-        }
-        return false
     }
 
     /**
