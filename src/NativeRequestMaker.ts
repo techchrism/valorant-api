@@ -1,6 +1,7 @@
 import RequestMaker, {RequestMakerEvents} from './RequestMaker'
 import {EventEmitter as EE} from 'ee-ts'
-import fetch, {Response} from 'node-fetch'
+import fetch from 'node-fetch'
+import {Response} from 'cross-fetch'
 import * as https from 'node:https'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
@@ -108,18 +109,18 @@ export class NativeRequestMaker extends EE<RequestMakerEvents> implements Reques
                 'Authorization': 'Basic ' + Buffer.from(`riot:${this.lockfileData!.password}`).toString('base64')
             },
             agent: this.localAgent
-        })
+        }) as unknown as Promise<Response>
     }
 
     requestRemoteGLZ(resource: string, shard: string, region: string, init?: Object): Promise<Response> {
-        return fetch(`https://glz-${region}-1.${shard}.a.pvp.net/${resource}`, init)
+        return fetch(`https://glz-${region}-1.${shard}.a.pvp.net/${resource}`, init) as unknown as Promise<Response>
     }
 
     requestRemotePD(resource: string, shard: string, init?: Object): Promise<Response> {
-        return fetch(`https://pd.${shard}.a.pvp.net/${resource}`, init)
+        return fetch(`https://pd.${shard}.a.pvp.net/${resource}`, init) as unknown as Promise<Response>
     }
 
     requestRemoteShared(resource: string, shard: string, init?: Object): Promise<Response> {
-        return fetch(`https://shared.${shard}.a.pvp.net/${resource}`, init)
+        return fetch(`https://shared.${shard}.a.pvp.net/${resource}`, init) as unknown as Promise<Response>
     }
 }

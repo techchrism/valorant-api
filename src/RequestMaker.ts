@@ -1,9 +1,6 @@
 import { EventEmitter as EE } from 'ee-ts'
-import {WebSocket as NodeWebSocket} from 'ws'
-import {Response as NodeResponse} from 'node-fetch'
-
-type IsoWebSocket = NodeWebSocket | WebSocket
-type IsoResponse = NodeResponse | Response
+import {WebSocket} from 'isomorphic-ws'
+import {Response} from 'cross-fetch'
 
 export interface RequestMakerEvents {
     /**
@@ -47,7 +44,7 @@ export default interface RequestMaker<T = {}> extends EE<T & RequestMakerEvents>
     /**
      * Connects to and returns the local websocket, if available
      */
-    getLocalWebsocket(): Promise<IsoWebSocket>
+    getLocalWebsocket(): Promise<WebSocket>
 
     /**
      * Returns a promise that resolves with the full content of the Valorant log file
@@ -61,7 +58,7 @@ export default interface RequestMaker<T = {}> extends EE<T & RequestMakerEvents>
      * @param resource The resource to request, appended to the local API base URL. Do not include a leading slash.
      * @returns A promise that resolves with the response object
      */
-    requestLocal(resource: string): Promise<IsoResponse>
+    requestLocal(resource: string): Promise<Response>
 
     /**
      * Make a remote "glz" API request to the provided resource
@@ -74,7 +71,7 @@ export default interface RequestMaker<T = {}> extends EE<T & RequestMakerEvents>
      * @param init Optional init object for the fetch request
      * @returns A promise that resolves with the response object
      */
-    requestRemoteGLZ(resource: string, shard: string, region: string, init?: Object): Promise<IsoResponse>
+    requestRemoteGLZ(resource: string, shard: string, region: string, init?: Object): Promise<Response>
 
     /**
      * Make a remote "pd" API request to the provided resource
@@ -85,7 +82,7 @@ export default interface RequestMaker<T = {}> extends EE<T & RequestMakerEvents>
      * @param init Optional init object for the fetch request
      * @returns A promise that resolves with the response object
      */
-    requestRemotePD(resource: string, shard: string, init?: Object): Promise<IsoResponse>
+    requestRemotePD(resource: string, shard: string, init?: Object): Promise<Response>
 
     /**
      * Make a remote "shared" API request to the provided resource
@@ -96,5 +93,5 @@ export default interface RequestMaker<T = {}> extends EE<T & RequestMakerEvents>
      * @param init Optional init object for the fetch request
      * @returns A promise that resolves with the response object
      */
-    requestRemoteShared(resource: string, shard: string, init?: Object): Promise<IsoResponse>
+    requestRemoteShared(resource: string, shard: string, init?: Object): Promise<Response>
 }

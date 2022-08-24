@@ -1,5 +1,6 @@
 import { EventEmitter as EE } from 'ee-ts'
 import RequestMaker, {RequestMakerEvents} from './RequestMaker'
+import {CloseEvent, ErrorEvent, MessageEvent, WebSocket} from 'isomorphic-ws'
 
 /**
  * Utility method to adapt a websocket connection into a promise
@@ -22,7 +23,7 @@ async function tryConnectWebsocket(url: string, modifyPending?: (ws: WebSocket) 
             signal?.removeEventListener('abort', abortHandler)
         }
 
-        function errorHandler(event: Event) {
+        function errorHandler(event: ErrorEvent) {
             removeEvents()
             reject(event)
         }
@@ -85,9 +86,9 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
     private _whitelisted: boolean = false
     private _localReady: boolean = false
 
-    private _bridgeCloseListener?: EventListener
-    private _statusCloseListener?: EventListener
-    private _statusMessageListener?: EventListener
+    private _bridgeCloseListener?: (event: CloseEvent) => void
+    private _statusCloseListener?: (event: CloseEvent) => void
+    private _statusMessageListener?: (event: MessageEvent) => void
 
     readonly baseIP: string
 
@@ -97,8 +98,8 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
     }
 
     get bridgeReady(): boolean {
-        return ((this._bridgeWebsocket !== undefined && this._bridgeWebsocket.readyState === 4) ||
-            (this._statusWebsocket !== undefined && this._statusWebsocket.readyState === 4))
+        return ((this._bridgeWebsocket !== undefined && this._bridgeWebsocket.readyState === WebSocket.OPEN) ||
+            (this._statusWebsocket !== undefined && this._statusWebsocket.readyState === WebSocket.OPEN))
     }
 
     get localReady(): boolean {
@@ -106,7 +107,7 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
     }
 
     get remoteReady(): boolean {
-        return (this._statusWebsocket !== undefined && this._statusWebsocket.readyState === 4)
+        return (this._statusWebsocket !== undefined && this._statusWebsocket.readyState === WebSocket.OPEN)
     }
 
     async getLocalWebsocket(): Promise<WebSocket> {
@@ -145,7 +146,7 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
         if(key == 'logMessage') {
             this._logWebsocket = new WebSocket(`ws://${this.baseIP}/proxy/log`)
             this._logWebsocket.addEventListener('message', event => {
-                const lines = event.data.split('\n')
+                const lines = event.data.toString().split('\n')
                 for(const line of lines) {
                     this.emit('logMessage', line)
                 }
@@ -206,7 +207,7 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
     private _onStatusMessage(message: MessageEvent) {
         let data
         try {
-            data = JSON.parse(message.data)
+            data = JSON.parse(message.data.toString())
         } catch(e) {
             return
         }
@@ -239,7 +240,7 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
             const onMessage = (message: MessageEvent) => {
                 let data
                 try {
-                    data = JSON.parse(message.data)
+                    data = JSON.parse(message.data.toString())
                 } catch(e) {
                     return
                 }
@@ -308,7 +309,7 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
             const onMessage = (message: MessageEvent) => {
                 let data
                 try {
-                    data = JSON.parse(message.data)
+                    data = JSON.parse(message.data.toString())
                 } catch(e) {
                     return
                 }
@@ -388,7 +389,7 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
             // Ensure bridge is connected
             if((signal !== undefined && signal.aborted) ||
                 this._bridgeWebsocket === undefined ||
-                this._bridgeWebsocket.readyState !== 4) {
+                this._bridgeWebsocket.readyState !== WebSocket.OPEN) {
                 reject()
                 return
             }
@@ -401,7 +402,7 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
             // Handle incoming bridge messages and look for whitelist response
             const messageHandler = (event: MessageEvent) => {
                 try {
-                    const data = JSON.parse(event.data)
+                    const data = JSON.parse(event.data.toString())
                     if(data.action === 'requestResponse') {
                         this._whitelisted = data['response']
                         removeListeners()
