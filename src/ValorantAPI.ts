@@ -51,21 +51,21 @@ export class ValorantAPI extends EventEmitter<CombinedEventType> {
             this.emit('websocketClose')
         })
         this._ws.onmessage = (event: MessageEvent) => {
-            if(typeof event.data === 'string') {
-                const data = JSON.parse(event.data)
-                if(Array.isArray(data) && data.length === 3) {
-                    const [id, eventName, payload] = data
-                    if(this._subscribedEvents.has(eventName)) {
-                        let processedPayload = payload
-                        if(typeof processedPayload === 'string') {
-                            try {
-                                processedPayload = JSON.parse(processedPayload)
-                            } catch(ignored) {}
-                        }
-                        this.emit(this._subscribedEvents.get(eventName)!, processedPayload)
-                    }
-                }
+            if(typeof event.data !== 'string') return
+
+            const data = JSON.parse(event.data)
+            if(!Array.isArray(data) || data.length !== 3) return
+
+            const [id, eventName, payload] = data
+            if(!this._subscribedEvents.has(eventName)) return
+
+            let processedPayload = payload
+            if(typeof processedPayload === 'string') {
+                try {
+                    processedPayload = JSON.parse(processedPayload)
+                } catch(ignored) {}
             }
+            this.emit(this._subscribedEvents.get(eventName)!, processedPayload)
         }
     }
 
