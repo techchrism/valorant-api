@@ -18,23 +18,24 @@ interface LockfileData {
 }
 
 export class NativeRequestMaker extends EE<RequestMakerEvents> implements RequestMaker {
-    private readonly localAgent: https.Agent
-    private lockfileData?: LockfileData
-    private logTail?: Tail
-    private watcher: fs.FSWatcher
-    private readonly lockfilePath: string
+    private readonly _localAgent: https.Agent
+    private _lockfileData?: LockfileData
+    private _logTail?: Tail
+    private _watcher: fs.FSWatcher
+    private readonly _lockfilePath: string
+    private _previousLockfileData: string = ''
 
     constructor() {
         super()
-        this.localAgent = new https.Agent({
+        this._localAgent = new https.Agent({
             rejectUnauthorized: false
         })
-        this.lockfilePath = path.join(process.env['LOCALAPPDATA']!, 'Riot Games\\Riot Client\\Config\\lockfile');
-        this.watcher = fs.watch(path.dirname(this.lockfilePath), async (eventType, fileName) => {
+        this._lockfilePath = path.join(process.env['LOCALAPPDATA']!, 'Riot Games\\Riot Client\\Config\\lockfile');
+        this._watcher = fs.watch(path.dirname(this._lockfilePath), async (eventType, fileName) => {
             if(fileName !== 'lockfile') return
 
             if(eventType === 'rename' && this.localReady) {
-                this.lockfileData = undefined
+                this._lockfileData = undefined
                 this.emit('localStatusChange', false)
             } else if(eventType === 'change' && !this.localReady) {
                 try {
@@ -44,14 +45,17 @@ export class NativeRequestMaker extends EE<RequestMakerEvents> implements Reques
         })
 
         try {
-            this.tryLoadLockfile()
+            this.tryLoadLockfile().catch(ignored => {})
         } catch(ignored) {}
     }
 
     private async tryLoadLockfile() {
-        const contents = await fs.promises.readFile(this.lockfilePath, 'utf8')
+        const contents = await fs.promises.readFile(this._lockfilePath, 'utf8')
+        if(contents === this._previousLockfileData) return
+        this._previousLockfileData = contents
+
         const split = contents.split(':')
-        this.lockfileData = {
+        this._lockfileData = {
             name: split[0],
             pid: parseInt(split[1]),
             port: parseInt(split[2]),
@@ -63,13 +67,13 @@ export class NativeRequestMaker extends EE<RequestMakerEvents> implements Reques
 
     override _onEventHandled(key: string) {
         if(key === 'logMessage') {
-            this.logTail = new Tail(path.join(process.env['LOCALAPPDATA']!, '/VALORANT/Saved/Logs/ShooterGame.log'), {
+            this._logTail = new Tail(path.join(process.env['LOCALAPPDATA']!, '/VALORANT/Saved/Logs/ShooterGame.log'), {
                 useWatchFile: true,
                 fsWatchOptions: {
                     interval: 250
                 }
             })
-            this.logTail.on('line', line => {
+            this._logTail.on('line', line => {
                 this.emit('logMessage', line)
             })
         }
@@ -77,14 +81,14 @@ export class NativeRequestMaker extends EE<RequestMakerEvents> implements Reques
 
     override _onEventUnhandled(key: string) {
         if(key === 'logMessage') {
-            this.logTail!.unwatch()
+            this._logTail!.unwatch()
         }
     }
 
     getLocalWebsocket(): Promise<WebSocket> {
         if(!this.localReady) throw new Error('Local not ready')
 
-        return Promise.resolve(new WebSocket(`wss://riot:${this.lockfileData!.password}@127.0.0.1:${this.lockfileData!.port}`, {
+        return Promise.resolve(new WebSocket(`wss://riot:${this._lockfileData!.password}@127.0.0.1:${this._lockfileData!.port}`, {
             rejectUnauthorized: false
         }));
     }
@@ -94,7 +98,7 @@ export class NativeRequestMaker extends EE<RequestMakerEvents> implements Reques
     }
 
     get localReady(): boolean {
-        return this.lockfileData !== undefined
+        return this._lockfileData !== undefined
     }
 
     get remoteReady(): boolean {
@@ -104,11 +108,11 @@ export class NativeRequestMaker extends EE<RequestMakerEvents> implements Reques
     requestLocal(resource: string): Promise<Response> {
         if(!this.localReady) throw new Error('Local not ready')
 
-        return fetch(`https://127.0.0.1:${this.lockfileData!.port}/${resource}`, {
+        return fetch(`https://127.0.0.1:${this._lockfileData!.port}/${resource}`, {
             headers: {
-                'Authorization': 'Basic ' + Buffer.from(`riot:${this.lockfileData!.password}`).toString('base64')
+                'Authorization': 'Basic ' + Buffer.from(`riot:${this._lockfileData!.password}`).toString('base64')
             },
-            agent: this.localAgent
+            agent: this._localAgent
         }) as unknown as Promise<Response>
     }
 
