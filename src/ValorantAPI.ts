@@ -101,7 +101,7 @@ export class ValorantAPI extends EventEmitter<CombinedEventType> {
         this._ws = await this.requestMaker.getLocalWebsocket()
         this._ws.on('open', () => {
             this.emit('websocketOpen', this._ws!)
-            for(const event of this._subscribedEvents) {
+            for(const event of this._subscribedEvents.keys()) {
                 this._ws!.send(JSON.stringify([5, event]))
             }
         })
@@ -123,7 +123,11 @@ export class ValorantAPI extends EventEmitter<CombinedEventType> {
                     processedPayload = JSON.parse(processedPayload)
                 } catch(ignored) {}
             }
-            this.emit(this._subscribedEvents.get(eventName)!, processedPayload)
+
+            this.emit(this._subscribedEvents.get(eventName)!, {
+                body: processedPayload,
+                event: eventName
+            })
         }
         return true
     }
@@ -165,7 +169,7 @@ export class ValorantAPI extends EventEmitter<CombinedEventType> {
      * @param data
      * @private
      */
-    private _onRiotMessagingService(data: RiotMessagingServiceV1Message): void {
+    private _onRiotMessagingService = (data: RiotMessagingServiceV1Message): void => {
         if(data.body.uri === gameEndURI) {
             if(this._gameID === null) {
                 //TODO add proper warning system
