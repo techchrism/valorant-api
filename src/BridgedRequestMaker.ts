@@ -1,5 +1,5 @@
 import { EventEmitter as EE } from 'ee-ts'
-import RequestMaker, {RequestMakerEvents} from './RequestMaker'
+import RequestMaker, {RequestMakerEvents, StatusChangeSource} from './RequestMaker'
 import {CloseEvent, ErrorEvent, MessageEvent, WebSocket} from 'isomorphic-ws'
 
 /**
@@ -62,8 +62,9 @@ export interface BridgedRequestMakerEvents extends RequestMakerEvents {
 }
 
 export interface StatusResponse {
-    lockfileReady: boolean,
+    lockfileReady: boolean
     logSize: Number
+    source: StatusChangeSource
 }
 
 export function instanceOfStatusResponse(object: any): object is StatusResponse {
@@ -195,7 +196,7 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
         // Ensure local readiness and remote readiness are false
         if(this._localReady) {
             this._localReady = false
-            this.emit('localStatusChange', this._localReady)
+            this.emit('localStatusChange', this._localReady, 'filesystem')
         }
         this.emit('remoteStatusChange', false)
     }
@@ -218,7 +219,7 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
 
         if(this._localReady !== data.lockfileReady) {
             this._localReady = data.lockfileReady
-            this.emit('localStatusChange', this._localReady)
+            this.emit('localStatusChange', this._localReady, data.source)
         }
     }
 

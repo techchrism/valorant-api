@@ -1,4 +1,4 @@
-import RequestMaker, {RequestMakerEvents} from './RequestMaker'
+import RequestMaker, {RequestMakerEvents, StatusChangeSource} from './RequestMaker'
 import {EventEmitter as EE} from 'ee-ts'
 import fetch from 'node-fetch'
 import {Response} from 'cross-fetch'
@@ -36,20 +36,20 @@ export class NativeRequestMaker extends EE<RequestMakerEvents> implements Reques
 
             if(eventType === 'rename' && this.localReady) {
                 this._lockfileData = undefined
-                this.emit('localStatusChange', false)
+                this.emit('localStatusChange', false, 'filesystem')
             } else if(eventType === 'change' && !this.localReady) {
                 try {
-                    await this.tryLoadLockfile()
+                    await this.tryLoadLockfile('filesystem')
                 } catch(ignored) {}
             }
         })
 
         try {
-            this.tryLoadLockfile().catch(ignored => {})
+            this.tryLoadLockfile('init').catch(ignored => {})
         } catch(ignored) {}
     }
 
-    private async tryLoadLockfile() {
+    private async tryLoadLockfile(source: StatusChangeSource) {
         const contents = await fs.promises.readFile(this._lockfilePath, 'utf8')
         if(contents === this._previousLockfileData) return
         this._previousLockfileData = contents
@@ -62,7 +62,7 @@ export class NativeRequestMaker extends EE<RequestMakerEvents> implements Reques
             password: split[3],
             protocol: split[4]
         }
-        this.emit('localStatusChange', true)
+        this.emit('localStatusChange', true, source)
     }
 
     override _onEventHandled(key: string) {

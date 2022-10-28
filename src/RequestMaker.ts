@@ -2,6 +2,8 @@ import { EventEmitter as EE } from 'ee-ts'
 import {WebSocket} from 'isomorphic-ws'
 import {Response} from 'cross-fetch'
 
+export type StatusChangeSource = 'init' | 'filesystem'
+
 export interface RequestMakerEvents {
     /**
      * Emitted when the request maker remote status changes
@@ -12,8 +14,9 @@ export interface RequestMakerEvents {
     /**
      * Emitted when the request maker local status changes
      * @param ready True if local requests are capable, false otherwise
+     * @param source The source of the status change
      */
-    localStatusChange(ready: boolean): void
+    localStatusChange(ready: boolean, source: StatusChangeSource): void
 
     /**
      * Emitted when there is a new line in the Valorant log file
