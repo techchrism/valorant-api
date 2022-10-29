@@ -63,6 +63,7 @@ export class NativeRequestMaker extends EE<RequestMakerEvents> implements Reques
             protocol: split[4]
         }
         this.emit('localStatusChange', true, source)
+        this.emit('localReady')
     }
 
     override _onEventHandled(key: string) {

@@ -12,11 +12,23 @@ export interface RequestMakerEvents {
     remoteStatusChange(ready: boolean): void
 
     /**
+     * Emitted when the request maker remote status changes to "true"
+     * Included for convenience using the "once" method
+     */
+    remoteReady(): void
+
+    /**
      * Emitted when the request maker local status changes
      * @param ready True if local requests are capable, false otherwise
      * @param source The source of the status change
      */
     localStatusChange(ready: boolean, source: StatusChangeSource): void
+
+    /**
+     * Emitted when the request maker local status changes to "true"
+     * Included for convenience using the "once" method
+     */
+    localReady(): void
 
     /**
      * Emitted when there is a new line in the Valorant log file
