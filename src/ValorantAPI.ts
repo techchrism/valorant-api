@@ -3,6 +3,7 @@ import {EventEmitter, EventKey} from 'ee-ts'
 import {WebSocketEventEmitters} from './types/websocket/WebSocketEventTypes'
 import {MessageEvent, WebSocket} from 'isomorphic-ws'
 import {RiotMessagingServiceV1Message} from './types/websocket/events/RiotMessagingServiceV1Message'
+import {CredentialManager} from './credentialManager/CredentialManager'
 
 const matchCorePrefix = '/riot-messaging-service/v1/message/ares-core-game/core-game/v1/matches/'
 const preGamePrefix = '/riot-messaging-service/v1/message/ares-pregame/pregame/v1/matches/'
@@ -40,6 +41,7 @@ type CombinedEventType = ValorantAPIEvents & WebSocketEventEmitters
 
 export class ValorantAPI extends EventEmitter<CombinedEventType> {
     public readonly requestMaker: RequestMaker
+    public readonly credentialManager: CredentialManager
 
     private _websocketEventCount = 0
     private _ws?: WebSocket
@@ -52,9 +54,10 @@ export class ValorantAPI extends EventEmitter<CombinedEventType> {
 
     private _localInitialized = false
 
-    constructor(requestMaker: RequestMaker) {
+    constructor(requestMaker: RequestMaker, credentialManager: CredentialManager) {
         super()
-        this.requestMaker = requestMaker;
+        this.requestMaker = requestMaker
+        this.credentialManager = credentialManager
 
         const localInitializationLogListener = (line: string) => {
             if(line.endsWith(localInitializationLogLineEnding)) {
