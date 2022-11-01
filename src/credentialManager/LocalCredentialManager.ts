@@ -1,5 +1,6 @@
 import {CredentialManager} from './CredentialManager'
 import RequestMaker from '../RequestMaker'
+import {atob} from 'iso-base64'
 
 type TokenResponseData = {
     accessToken: string
@@ -53,18 +54,14 @@ export class LocalCredentialManager implements CredentialManager {
     private async _requestCredentials(): Promise<void> {
         if(!this._requestMaker.localReady) throw new Error('Local requests are not ready for credential manager')
 
-        const data = (await (await this._requestMaker.requestLocal('/entitlements/v1/token')).json()) as TokenResponseData
+        const data = (await (await this._requestMaker.requestLocal('entitlements/v1/token')).json()) as TokenResponseData
         this._token = data.accessToken
         this._entitlement = data.token
 
-        const tokenJwtPayload = (JSON.parse(
-            Buffer.from(this._token.split('.')[1], 'base64').toString('utf-8')
-        ) as ValorantJWTPayload)
+        const tokenJwtPayload = (JSON.parse(atob(this._token.split('.')[1])) as ValorantJWTPayload)
         this._tokenExpiration = (tokenJwtPayload.exp * 1000) - expirationDiff
 
-        const entitlementJwtPayload = (JSON.parse(
-            Buffer.from(this._entitlement.split('.')[1], 'base64').toString('utf-8')
-        ) as ValorantJWTPayload)
+        const entitlementJwtPayload = (JSON.parse(atob(this._entitlement.split('.')[1])) as ValorantJWTPayload)
         this._entitlementExpiration = (entitlementJwtPayload.exp * 1000) - expirationDiff
     }
 }
