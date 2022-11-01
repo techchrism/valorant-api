@@ -5,6 +5,7 @@ import {MessageEvent, WebSocket} from 'isomorphic-ws'
 import {RiotMessagingServiceV1Message} from './types/websocket/events/RiotMessagingServiceV1Message'
 import {CredentialManager} from './credentialManager/CredentialManager'
 import {LocalAPI} from './api/LocalAPI'
+import {PvPAPI} from './api/PvPApi'
 
 const matchCorePrefix = '/riot-messaging-service/v1/message/ares-core-game/core-game/v1/matches/'
 const preGamePrefix = '/riot-messaging-service/v1/message/ares-pregame/pregame/v1/matches/'
@@ -57,12 +58,14 @@ export class ValorantAPI extends EventEmitter<CombinedEventType> {
 
     // APIs
     public readonly local: LocalAPI
+    public readonly pvp: PvPAPI
 
     constructor(requestMaker: RequestMaker, credentialManager: CredentialManager) {
         super()
         this.requestMaker = requestMaker
         this.credentialManager = credentialManager
         this.local = new LocalAPI(this.requestMaker, this.credentialManager)
+        this.pvp = new PvPAPI(this.requestMaker, this.credentialManager)
 
         const localInitializationLogListener = (line: string) => {
             if(line.endsWith(localInitializationLogLineEnding)) {
