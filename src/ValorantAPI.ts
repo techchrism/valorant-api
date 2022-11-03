@@ -10,7 +10,25 @@ import {PvPAPI} from './api/PvPApi'
 const matchCorePrefix = '/riot-messaging-service/v1/message/ares-core-game/core-game/v1/matches/'
 const preGamePrefix = '/riot-messaging-service/v1/message/ares-pregame/pregame/v1/matches/'
 const gameEndURI = '/riot-messaging-service/v1/message/ares-match-details/match-details/v1/matches'
+
 const localInitializationLogLineEnding = 'LogPlatformInitializerV2: Status is now: Initialized'
+const ciServerVersionRegex = /LogShooter: Display: CI server version: (?<version>.+)/
+const branchRegex = /LogShooter: Display: Branch: (?<branch>.+)/
+const changeListRegex = /LogShooter: Display: Changelist: (?<changelist>.+)/
+const buildVersionRegex = /LogShooter: Display: Build version: (?<buildVersion>.+)/
+const sessionAPICallRegex = /\[GET https:\/\/glz-(?<region>.+?)-1.(?<shard>.+?).a.pvp.net\/session\/v1\/sessions\/(?<puuid>.+?)\/reconnect\]/
+
+export interface ValorantInitCollectedData {
+    version: {
+        ciServerVersion: string
+        branch: string
+        changelist: number
+        buildVersion: number
+    }
+    puuid: string
+    region: string
+    shard: string
+}
 
 export type GameState = 'pregame' | 'coregame' | 'no-game'
 
@@ -108,11 +126,20 @@ export class ValorantAPI extends EventEmitter<CombinedEventType> {
      * @param signal Optional abort signal. Used for aborting the initiation wait when local becomes unready
      * @private
      */
-    private async waitForInit(readLog: boolean, signal?: AbortSignal): Promise<void> {
-        if(signal?.aborted) return
+    private async waitForInit(readLog: boolean, signal?: AbortSignal): Promise<ValorantInitCollectedData> {
+        if(signal?.aborted) throw new Error('Aborted')
         if(!this.requestMaker.localReady) throw new Error('Local requests not yet ready')
 
         return new Promise(async (resolve, reject) => {
+            let ciServerVersion: string | undefined = undefined
+            let branch: string | undefined = undefined
+            let changelist: number | undefined = undefined
+            let buildVersion: number | undefined = undefined
+
+            let shard: string | undefined = undefined
+            let region: string | undefined = undefined
+            let puuid: string | undefined = undefined
+
             const localInitializationLogListener = (line: string) => {
                 //TODO add region / shard / puuid / version pre-init info scraping
                 if(line.endsWith(localInitializationLogLineEnding)) {
@@ -120,7 +147,60 @@ export class ValorantAPI extends EventEmitter<CombinedEventType> {
                     this.emit('localInitializationStateChange', true)
                     this.requestMaker.off('logMessage', localInitializationLogListener)
                     signal?.removeEventListener('abort', abortHandler)
-                    resolve()
+                    resolve({
+                        version: {
+                            ciServerVersion: ciServerVersion || '',
+                            branch: branch || '',
+                            changelist: changelist || -1,
+                            buildVersion: buildVersion || -1
+                        },
+                        shard: shard || '',
+                        region: region || '',
+                        puuid: puuid || ''
+                    })
+                    return
+                }
+
+                if(ciServerVersion === undefined) {
+                    const match = ciServerVersionRegex.exec(line)
+                    if(match) {
+                        ciServerVersion = match.groups?.version || ''
+                        return
+                    }
+                }
+
+                if(branch === undefined) {
+                    const match = branchRegex.exec(line)
+                    if(match) {
+                        branch = match.groups?.branch || ''
+                        return
+                    }
+                }
+
+                if(changelist === undefined) {
+                    const match = changeListRegex.exec(line)
+                    if(match) {
+                        changelist = Number(match.groups?.changelist)
+                        return
+                    }
+                }
+
+                if(buildVersion === undefined) {
+                    const match = buildVersionRegex.exec(line)
+                    if(match) {
+                        buildVersion = Number(match.groups?.buildVersion)
+                        return
+                    }
+                }
+
+                if(shard === undefined) {
+                    const match = sessionAPICallRegex.exec(line)
+                    if(match) {
+                        shard = match.groups?.shard || ''
+                        region = match.groups?.region || ''
+                        puuid = match.groups?.puuid || ''
+                        return
+                    }
                 }
             }
             const abortHandler = () => {
