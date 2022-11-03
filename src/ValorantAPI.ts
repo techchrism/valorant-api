@@ -67,8 +67,15 @@ export class ValorantAPI extends EventEmitter<CombinedEventType> {
         this.local = new LocalAPI(this.requestMaker, this.credentialManager)
         this.pvp = new PvPAPI(this.requestMaker, this.credentialManager)
 
-        //TODO support case where local is ready before this is constructed
         let localUnreadyAbortController: AbortController | undefined = undefined
+        // Check for initialization status if local is already ready
+        if(this.requestMaker.localReady) {
+            localUnreadyAbortController = new AbortController()
+            // There *might* be an edge case where the local is ready but the game isn't initialized yet
+            this.waitForInit(true, localUnreadyAbortController.signal)
+        }
+
+        // Handle initialization stage changes in tandem with local readiness
         this.requestMaker.on('localStatusChange', (ready, source) => {
             if(ready) {
                 localUnreadyAbortController = new AbortController()
@@ -94,16 +101,11 @@ export class ValorantAPI extends EventEmitter<CombinedEventType> {
         })
     }
 
-    private async waitForLocalReady() {
-        if(this.requestMaker.localReady) return
-        return new Promise<void>(resolve => {
-            this.requestMaker.one('localReady', () => {resolve()})
-        })
-    }
-
     /**
      * Waits for the game to be initialized
      * Called when local is ready
+     * @param readLog Whether to read the log file or not. Should be false when the lockfile is "fresh" because the lockfile is updated before the previous log is cleared
+     * @param signal Optional abort signal. Used for aborting the initiation wait when local becomes unready
      * @private
      */
     private async waitForInit(readLog: boolean, signal?: AbortSignal): Promise<void> {
