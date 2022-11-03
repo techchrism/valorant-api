@@ -67,34 +67,15 @@ export class ValorantAPI extends EventEmitter<CombinedEventType> {
         this.local = new LocalAPI(this.requestMaker, this.credentialManager)
         this.pvp = new PvPAPI(this.requestMaker, this.credentialManager)
 
-        const localInitializationLogListener = (line: string) => {
-            if(line.endsWith(localInitializationLogLineEnding)) {
-                this._localInitialized = true
-                this.emit('localInitializationStateChange', true)
-                this.requestMaker.off('logMessage', localInitializationLogListener)
-            }
-        }
-
         this.requestMaker.on('localStatusChange', (ready, source) => {
             if(ready) {
-                // Wait until initialized
-                if(source === 'init') {
-                    this.requestMaker.getLog().then(log => {
-                        if(log.includes(localInitializationLogLineEnding)) {
-                            this._localInitialized = true
-                            this.emit('localInitializationStateChange', true)
-                        } else {
-                            // Not initialized, register log listener
-                            this.requestMaker.on('logMessage', localInitializationLogListener)
-                        }
-                    })
-                } else {
-                    this.requestMaker.on('logMessage', localInitializationLogListener)
-                }
+                this.waitForInit(source === 'init')
             } else {
                 // Remove local initialization status
-                this._localInitialized = false
-                this.emit('localInitializationStateChange', false)
+                if(this._localInitialized) {
+                    this._localInitialized = false
+                    this.emit('localInitializationStateChange', false)
+                }
             }
         })
 
@@ -104,6 +85,47 @@ export class ValorantAPI extends EventEmitter<CombinedEventType> {
                 this.websocketConnect()
             }
         })
+    }
+
+    private async waitForLocalReady() {
+        if(this.requestMaker.localReady) return
+        return new Promise<void>(resolve => {
+            this.requestMaker.one('localReady', () => {resolve()})
+        })
+    }
+
+    /**
+     * Waits for the game to be initialized
+     * Called when local is ready
+     * @private
+     */
+    private async waitForInit(readLog: boolean = true) {
+        // First, wait for local status to be ready
+        //TODO check if this is redundant
+        await this.waitForLocalReady()
+
+        //TODO if local ready-ness goes false, cancel the init process
+
+        const localInitializationLogListener = (line: string) => {
+            //TODO add region / shard / puuid / version pre-init info scraping
+            if(line.endsWith(localInitializationLogLineEnding)) {
+                this._localInitialized = true
+                this.emit('localInitializationStateChange', true)
+                this.requestMaker.off('logMessage', localInitializationLogListener)
+            }
+        }
+
+        // Next, start watching the log and wait for confirmation
+        this.requestMaker.on('logMessage', localInitializationLogListener)
+        await this.requestMaker.waitForLogWatching()
+
+        // Finally, request the log in full
+        if(readLog) {
+            const logData = await this.requestMaker.getLog()
+            for(const line of logData.split(/\r?\n/)) {
+                localInitializationLogListener(line)
+            }
+        }
     }
 
     private async websocketConnect(): Promise<boolean> {

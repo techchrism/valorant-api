@@ -24,6 +24,7 @@ export class NativeRequestMaker extends EE<RequestMakerEvents> implements Reques
     private _watcher: fs.FSWatcher
     private readonly _lockfilePath: string
     private _previousLockfileData: string = ''
+    private _waitingForLogWatchingPromises: Array<() => void> = []
 
     constructor() {
         super()
@@ -68,6 +69,7 @@ export class NativeRequestMaker extends EE<RequestMakerEvents> implements Reques
 
     override _onEventHandled(key: string) {
         if(key === 'logMessage') {
+            // Constructor loads file synchronously ( https://github.com/lucagrulla/node-tail/blob/5d2a4b5f91440ea0bec929cb3e16b455cf9a6859/src/tail.js#L56 )
             this._logTail = new Tail(path.join(process.env['LOCALAPPDATA']!, '/VALORANT/Saved/Logs/ShooterGame.log'), {
                 useWatchFile: true,
                 fsWatchOptions: {
@@ -77,16 +79,21 @@ export class NativeRequestMaker extends EE<RequestMakerEvents> implements Reques
             this._logTail.on('line', line => {
                 this.emit('logMessage', line)
             })
+
+            // Because the file is loaded synchronously, it is immediately ready
+            this._waitingForLogWatchingPromises.forEach(p => p())
+            this._waitingForLogWatchingPromises = []
         }
     }
 
     override _onEventUnhandled(key: string) {
         if(key === 'logMessage') {
             this._logTail!.unwatch()
+            this._logTail = undefined
         }
     }
 
-    getLocalWebsocket(): Promise<WebSocket> {
+    async getLocalWebsocket(): Promise<WebSocket> {
         if(!this.localReady) throw new Error('Local not ready')
 
         return Promise.resolve(new WebSocket(`wss://riot:${this._lockfileData!.password}@127.0.0.1:${this._lockfileData!.port}`, {
@@ -94,8 +101,16 @@ export class NativeRequestMaker extends EE<RequestMakerEvents> implements Reques
         }));
     }
 
-    getLog(): Promise<string> {
+    async getLog(): Promise<string> {
         return fs.promises.readFile(path.join(process.env['LOCALAPPDATA']!, '/VALORANT/Saved/Logs/ShooterGame.log'), 'utf-8')
+    }
+
+    async waitForLogWatching(): Promise<void> {
+        if(this._logTail) return Promise.resolve()
+
+        return new Promise(resolve => {
+            this._waitingForLogWatchingPromises.push(resolve)
+        })
     }
 
     get localReady(): boolean {

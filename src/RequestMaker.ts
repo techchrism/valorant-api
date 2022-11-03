@@ -68,6 +68,12 @@ export default interface RequestMaker<T = {}> extends EE<T & RequestMakerEvents>
     getLog(): Promise<string>
 
     /**
+     * Returns a promise that resolves when changes to the log are reflected in events
+     * Used to ensure no missing lines from the log
+     */
+    waitForLogWatching(): Promise<void>
+
+    /**
      * Make a local API request to the provided resource
      * To request the url "https://127.0.0.1:{lockfile port}/help", use "help" as the resource
      * @param resource The resource to request, appended to the local API base URL. Do not include a leading slash.

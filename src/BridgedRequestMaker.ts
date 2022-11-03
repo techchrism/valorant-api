@@ -177,6 +177,11 @@ export class BridgedRequestMaker extends EE<BridgedRequestMakerEvents> implement
         return (await fetch(`http://${this.baseIP}/proxy/log`)).text()
     }
 
+    async waitForLogWatching(): Promise<void> {
+        //TODO implement
+        return Promise.resolve()
+    }
+
     /**
      * Called when the root bridge websocket is closed unexpectedly
      * This does not include the case when the websocket is closed upon being whitelisted
