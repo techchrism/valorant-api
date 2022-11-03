@@ -67,10 +67,17 @@ export class ValorantAPI extends EventEmitter<CombinedEventType> {
         this.local = new LocalAPI(this.requestMaker, this.credentialManager)
         this.pvp = new PvPAPI(this.requestMaker, this.credentialManager)
 
+        //TODO support case where local is ready before this is constructed
+        let localUnreadyAbortController: AbortController | undefined = undefined
         this.requestMaker.on('localStatusChange', (ready, source) => {
             if(ready) {
-                this.waitForInit(source === 'init')
+                localUnreadyAbortController = new AbortController()
+                this.waitForInit(source === 'init', localUnreadyAbortController.signal)
             } else {
+                if(localUnreadyAbortController) {
+                    localUnreadyAbortController.abort()
+                    localUnreadyAbortController = undefined
+                }
                 // Remove local initialization status
                 if(this._localInitialized) {
                     this._localInitialized = false
@@ -99,33 +106,43 @@ export class ValorantAPI extends EventEmitter<CombinedEventType> {
      * Called when local is ready
      * @private
      */
-    private async waitForInit(readLog: boolean = true) {
-        // First, wait for local status to be ready
-        //TODO check if this is redundant
-        await this.waitForLocalReady()
+    private async waitForInit(readLog: boolean, signal?: AbortSignal): Promise<void> {
+        if(signal?.aborted) return
+        if(!this.requestMaker.localReady) throw new Error('Local requests not yet ready')
 
-        //TODO if local ready-ness goes false, cancel the init process
-
-        const localInitializationLogListener = (line: string) => {
-            //TODO add region / shard / puuid / version pre-init info scraping
-            if(line.endsWith(localInitializationLogLineEnding)) {
-                this._localInitialized = true
-                this.emit('localInitializationStateChange', true)
+        return new Promise(async (resolve, reject) => {
+            const localInitializationLogListener = (line: string) => {
+                //TODO add region / shard / puuid / version pre-init info scraping
+                if(line.endsWith(localInitializationLogLineEnding)) {
+                    this._localInitialized = true
+                    this.emit('localInitializationStateChange', true)
+                    this.requestMaker.off('logMessage', localInitializationLogListener)
+                    signal?.removeEventListener('abort', abortHandler)
+                    resolve()
+                }
+            }
+            const abortHandler = () => {
                 this.requestMaker.off('logMessage', localInitializationLogListener)
+                reject(new Error('Aborted'))
             }
-        }
 
-        // Next, start watching the log and wait for confirmation
-        this.requestMaker.on('logMessage', localInitializationLogListener)
-        await this.requestMaker.waitForLogWatching()
+            // Next, start watching the log and wait for confirmation
+            this.requestMaker.on('logMessage', localInitializationLogListener)
+            signal?.addEventListener('abort', abortHandler)
+            await this.requestMaker.waitForLogWatching()
 
-        // Finally, request the log in full
-        if(readLog) {
-            const logData = await this.requestMaker.getLog()
-            for(const line of logData.split(/\r?\n/)) {
-                localInitializationLogListener(line)
+            // The promise will already be rejected from the abort handler if the signal was aborted
+            if(signal?.aborted) return
+
+            // Finally, request the log in full
+            if(readLog) {
+                const logData = await this.requestMaker.getLog()
+                if(signal?.aborted) return
+                for(const line of logData.split(/\r?\n/)) {
+                    localInitializationLogListener(line)
+                }
             }
-        }
+        })
     }
 
     private async websocketConnect(): Promise<boolean> {
