@@ -5,7 +5,7 @@ import {MessageEvent, WebSocket} from 'isomorphic-ws'
 import {RiotMessagingServiceV1Message} from './types/websocket/events/RiotMessagingServiceV1Message'
 import {CredentialManager} from './credentialManager/CredentialManager'
 import {LocalAPI} from './api/LocalAPI'
-import {PvPAPI} from './api/PvPApi'
+import {RemoteAPI, RemoteAPIDefaults} from './api/RemoteAPI'
 
 const matchCorePrefix = '/riot-messaging-service/v1/message/ares-core-game/core-game/v1/matches/'
 const preGamePrefix = '/riot-messaging-service/v1/message/ares-pregame/pregame/v1/matches/'
@@ -37,7 +37,8 @@ export type ValorantAPIEvents = {
     websocketClose: () => void
 
     gameStateChange: (state: GameState, id: string) => void
-    localInitializationStateChange: (ready: boolean) => void
+    localInitialized: (remoteAPI: RemoteAPI<RemoteAPIDefaults>, initData: ValorantInitCollectedData) => void
+    localUninitialized: () => void
 }
 
 /**
@@ -73,17 +74,17 @@ export class ValorantAPI extends EventEmitter<CombinedEventType> {
     private _previousGameID: string | null = null
 
     private _localInitialized = false
+    private _initData?: ValorantInitCollectedData
 
     // APIs
     public readonly local: LocalAPI
-    public readonly pvp: PvPAPI
+    public pvp?: RemoteAPI<RemoteAPIDefaults> = undefined
 
     constructor(requestMaker: RequestMaker, credentialManager: CredentialManager) {
         super()
         this.requestMaker = requestMaker
         this.credentialManager = credentialManager
         this.local = new LocalAPI(this.requestMaker, this.credentialManager)
-        this.pvp = new PvPAPI(this.requestMaker, this.credentialManager)
 
         let localUnreadyAbortController: AbortController | undefined = undefined
         // Check for initialization status if local is already ready
@@ -106,14 +107,14 @@ export class ValorantAPI extends EventEmitter<CombinedEventType> {
                 // Remove local initialization status
                 if(this._localInitialized) {
                     this._localInitialized = false
-                    this.emit('localInitializationStateChange', false)
+                    this.emit('localUninitialized')
                 }
             }
         })
 
         // Connect to websocket and subscribe to events when local is ready
-        this.on('localInitializationStateChange', ready => {
-            if(ready && this._websocketEventCount > 0) {
+        this.on('localInitialized', () => {
+            if(this._websocketEventCount > 0) {
                 this.websocketConnect()
             }
         })
@@ -141,13 +142,9 @@ export class ValorantAPI extends EventEmitter<CombinedEventType> {
             let puuid: string | undefined = undefined
 
             const localInitializationLogListener = (line: string) => {
-                //TODO add region / shard / puuid / version pre-init info scraping
                 if(line.endsWith(localInitializationLogLineEnding)) {
                     this._localInitialized = true
-                    this.emit('localInitializationStateChange', true)
-                    this.requestMaker.off('logMessage', localInitializationLogListener)
-                    signal?.removeEventListener('abort', abortHandler)
-                    resolve({
+                    this._initData = {
                         version: {
                             ciServerVersion: ciServerVersion || '',
                             branch: branch || '',
@@ -157,7 +154,18 @@ export class ValorantAPI extends EventEmitter<CombinedEventType> {
                         shard: shard || '',
                         region: region || '',
                         puuid: puuid || ''
+                    }
+                    this.pvp = new RemoteAPI(this.requestMaker, this.credentialManager, {
+                        shard: this._initData.shard,
+                        region: this._initData.region,
+                        puuid: this._initData.puuid,
+                        version: this._initData.version.ciServerVersion
                     })
+
+                    this.emit('localInitialized', this.pvp, this._initData)
+                    this.requestMaker.off('logMessage', localInitializationLogListener)
+                    signal?.removeEventListener('abort', abortHandler)
+                    resolve(this._initData)
                     return
                 }
 
