@@ -41,11 +41,9 @@ export class RemoteAPI<DefaultData extends RemoteAPIDefaults | undefined = undef
 
     async getMatchHistory(options: ValorantMatchHistoryRequestOptions & ConditionallyOptionalDefaults<DefaultData, 'puuid' | 'shard'>): Promise<ValorantMatchHistoryResponse> {
         const params = new URLSearchParams()
-        if(options) {
-            if(options.startIndex) params.set('startIndex', options.startIndex.toString())
-            if(options.endIndex) params.set('endIndex', options.endIndex.toString())
-            if(options.queue) params.set('queue', options.queue.toString())
-        }
+        if(options.startIndex) params.set('startIndex', options.startIndex.toString())
+        if(options.endIndex) params.set('endIndex', options.endIndex.toString())
+        if(options.queue) params.set('queue', options.queue.toString())
         let paramsStr = params.toString()
         if(paramsStr.length > 0) paramsStr = '?' + paramsStr
 
