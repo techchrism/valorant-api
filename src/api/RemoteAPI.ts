@@ -92,4 +92,17 @@ export class RemoteAPI<DefaultData extends RemoteAPIDefaults | undefined = undef
             }
         })).json()
     }
+
+    async setPlayerLoadout(options: {
+        loadout: Omit<ValorantPlayerLoadoutResponse, 'Subject' | 'Version'>
+    } & ConditionallyOptionalDefaults<DefaultData, 'puuid' | 'shard'>): Promise<ValorantPlayerLoadoutResponse> {
+        return (await this._requestMaker.requestRemotePD(`personalization/v2/players/${this.getPUUID(options)}/playerloadout`, this.getShard(options), {
+            method: 'PUT',
+            body: JSON.stringify(options.loadout),
+            headers: {
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement(),
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken()
+            }
+        })).json()
+    }
 }
