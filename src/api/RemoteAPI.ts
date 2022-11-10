@@ -10,6 +10,7 @@ import {ValorantMatchDetailsResponse} from '../types/api/pvp/ValorantMatchDetail
 import {ValorantCompetitiveUpdatesResponse} from '../types/api/pvp/ValorantCompetitiveUpdatesResponse'
 import {ValorantLeaderboardRequestOptions} from '../types/api/pvp/ValorantLeaderboardRequestOptions'
 import {ValorantLeaderboardResponse} from '../types/api/pvp/ValorantLeaderboardResponse'
+import {ValorantConfigResponse} from '../types/api/pvp/ValorantConfigResponse'
 
 export interface RemoteAPIDefaults {
     puuid: string
@@ -157,4 +158,9 @@ export class RemoteAPI<DefaultData extends RemoteAPIDefaults | undefined = undef
             }
         })).json()
     }
+
+    async getConfig(options: ConditionallyOptionalDefaults<DefaultData, 'shard'>): Promise<ValorantConfigResponse> {
+        return (await this._requestMaker.requestRemoteShared(`v1/config/${this.getShard(options)}`, this.getShard(options))).json()
+    }
+
 }
