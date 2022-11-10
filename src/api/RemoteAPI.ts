@@ -6,6 +6,7 @@ import {ValorantContentResponse} from '../types/api/pvp/ValorantContentResponse'
 import {ValorantAccountXPResponse} from '../types/api/pvp/ValorantAccountXPResponse'
 import {ValorantPlayerLoadoutResponse} from '../types/api/pvp/ValorantPlayerLoadoutResponse'
 import {ValorantMMRResponse} from '../types/api/pvp/ValorantMMRResponse'
+import {ValorantMatchDetailsResponse} from '../types/api/pvp/ValorantMatchDetailsResponse'
 
 export interface RemoteAPIDefaults {
     puuid: string
@@ -109,6 +110,15 @@ export class RemoteAPI<DefaultData extends RemoteAPIDefaults | undefined = undef
 
     async getMMR(options: ConditionallyOptionalDefaults<DefaultData, 'puuid' | 'shard'>): Promise<ValorantMMRResponse> {
         return (await this._requestMaker.requestRemotePD(`mmr/v1/players/${this.getPUUID(options)}`, this.getShard(options), {
+            headers: {
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement(),
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken()
+            }
+        })).json()
+    }
+
+    async getMatchDetails(options: {matchID: string} & ConditionallyOptionalDefaults<DefaultData, 'shard'>): Promise<ValorantMatchDetailsResponse> {
+        return (await this._requestMaker.requestRemotePD(`match-details/v1/matches/${options.matchID}`, this.getShard(options), {
             headers: {
                 'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement(),
                 'Authorization': 'Bearer ' + await this._credentialManager.getToken()
