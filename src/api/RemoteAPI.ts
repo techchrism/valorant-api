@@ -7,6 +7,7 @@ import {ValorantAccountXPResponse} from '../types/api/pvp/ValorantAccountXPRespo
 import {ValorantPlayerLoadoutResponse} from '../types/api/pvp/ValorantPlayerLoadoutResponse'
 import {ValorantMMRResponse} from '../types/api/pvp/ValorantMMRResponse'
 import {ValorantMatchDetailsResponse} from '../types/api/pvp/ValorantMatchDetailsResponse'
+import {ValorantCompetitiveUpdatesResponse} from '../types/api/pvp/ValorantCompetitiveUpdatesResponse'
 
 export interface RemoteAPIDefaults {
     puuid: string
@@ -122,6 +123,16 @@ export class RemoteAPI<DefaultData extends RemoteAPIDefaults | undefined = undef
             headers: {
                 'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement(),
                 'Authorization': 'Bearer ' + await this._credentialManager.getToken()
+            }
+        })).json()
+    }
+
+    async getCompetitiveUpdates(options: ConditionallyOptionalDefaults<DefaultData, 'puuid' | 'shard'>): Promise<ValorantCompetitiveUpdatesResponse> {
+        return (await this._requestMaker.requestRemotePD(`mmr/v1/players/${this.getPUUID(options)}/competitiveupdates`, this.getShard(options), {
+            headers: {
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement(),
+                'X-Riot-ClientPlatform': defaultPlatform
             }
         })).json()
     }

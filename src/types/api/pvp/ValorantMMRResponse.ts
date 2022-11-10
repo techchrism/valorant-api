@@ -1,3 +1,5 @@
+import {ValorantCompetitiveUpdate} from './ValorantCompetitiveUpdatesResponse'
+
 export type ValorantGameMode = 'competitive' | 'custom' | 'deathmatch' | 'ggteam' | 'newmap' | 'onefa' | 'seeding' | 'snowball' | 'spikerush' | 'unrated' | string
 
 export interface QueueMMR {
@@ -31,20 +33,7 @@ export interface ValorantMMRResponse {
     QueueSkills: {
         [queue: string]: QueueMMR
     }
-    LatestCompetitiveUpdate: {
-        MatchID: string
-        MapID: string
-        SeasonID: string
-        MatchStartTime: number
-        TierAfterUpdate: number
-        TierBeforeUpdate: number
-        RankedRatingAfterUpdate: number
-        RankedRatingBeforeUpdate: number
-        RankedRatingEarned: number
-        RankedRatingPerformanceBonus: number
-        CompetitiveMovement: string
-        AFKPenalty: number
-    }
+    LatestCompetitiveUpdate: ValorantCompetitiveUpdate
     IsLeaderboardAnonymized: boolean
     IsActRankBadgeHidden: boolean
 }
