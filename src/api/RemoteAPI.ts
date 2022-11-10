@@ -109,11 +109,13 @@ export class RemoteAPI<DefaultData extends RemoteAPIDefaults | undefined = undef
         })).json()
     }
 
-    async getMMR(options: ConditionallyOptionalDefaults<DefaultData, 'puuid' | 'shard'>): Promise<ValorantMMRResponse> {
+    async getMMR(options: ConditionallyOptionalDefaults<DefaultData, 'puuid' | 'shard' | 'version'>): Promise<ValorantMMRResponse> {
         return (await this._requestMaker.requestRemotePD(`mmr/v1/players/${this.getPUUID(options)}`, this.getShard(options), {
             headers: {
                 'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement(),
-                'Authorization': 'Bearer ' + await this._credentialManager.getToken()
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                'X-Riot-ClientPlatform': defaultPlatform,
+                'X-Riot-ClientVersion': this.getVersion(options)
             }
         })).json()
     }
