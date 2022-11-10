@@ -91,14 +91,14 @@ export class ValorantAPI extends EventEmitter<CombinedEventType> {
         if(this.requestMaker.localReady) {
             localUnreadyAbortController = new AbortController()
             // There *might* be an edge case where the local is ready but the game isn't initialized yet
-            this.waitForInit(true, localUnreadyAbortController.signal)
+            this.waitForInit(true, localUnreadyAbortController.signal).catch(ignored => {})
         }
 
         // Handle initialization stage changes in tandem with local readiness
         this.requestMaker.on('localStatusChange', (ready, source) => {
             if(ready) {
                 localUnreadyAbortController = new AbortController()
-                this.waitForInit(source === 'init', localUnreadyAbortController.signal)
+                this.waitForInit(source === 'init', localUnreadyAbortController.signal).catch(ignored => {})
             } else {
                 if(localUnreadyAbortController) {
                     localUnreadyAbortController.abort()
