@@ -8,6 +8,8 @@ import {ValorantPlayerLoadoutResponse} from '../types/api/pvp/ValorantPlayerLoad
 import {ValorantMMRResponse} from '../types/api/pvp/ValorantMMRResponse'
 import {ValorantMatchDetailsResponse} from '../types/api/pvp/ValorantMatchDetailsResponse'
 import {ValorantCompetitiveUpdatesResponse} from '../types/api/pvp/ValorantCompetitiveUpdatesResponse'
+import {ValorantLeaderboardRequestOptions} from '../types/api/pvp/ValorantLeaderboardRequestOptions'
+import {ValorantLeaderboardResponse} from '../types/api/pvp/ValorantLeaderboardResponse'
 
 export interface RemoteAPIDefaults {
     puuid: string
@@ -135,6 +137,23 @@ export class RemoteAPI<DefaultData extends RemoteAPIDefaults | undefined = undef
                 'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
                 'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement(),
                 'X-Riot-ClientPlatform': defaultPlatform
+            }
+        })).json()
+    }
+
+    async getLeaderboard(options: ValorantLeaderboardRequestOptions & ConditionallyOptionalDefaults<DefaultData, 'version' | 'shard'>): Promise<ValorantLeaderboardResponse> {
+        const params = new URLSearchParams()
+        params.set('startIndex', (options.startIndex ?? 0).toString())
+        params.set('size', (options.size ?? 510).toString())
+        if(options.query) params.set('query', options.query)
+
+        const url = `mmr/v1/leaderboards/affinity/${this.getShard(options)}/queue/competitive/season/${options.seasonID}?${params.toString()}`
+
+        return (await this._requestMaker.requestRemotePD(url, this.getShard(options), {
+            headers: {
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement(),
+                'X-Riot-ClientVersion': this.getVersion(options),
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken()
             }
         })).json()
     }
