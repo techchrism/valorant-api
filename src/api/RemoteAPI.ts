@@ -2,6 +2,7 @@ import RequestMaker from '../RequestMaker'
 import {CredentialManager} from '../credentialManager/CredentialManager'
 import {ValorantMatchHistoryResponse} from '../types/api/pvp/ValorantMatchHistoryResponse'
 import {ValorantMatchHistoryRequestOptions} from '../types/api/pvp/ValorantMatchHistoryRequestOptions'
+import {ValorantContentResponse} from '../types/api/pvp/ValorantContentResponse'
 
 export interface RemoteAPIDefaults {
     puuid: string
@@ -19,6 +20,8 @@ type ConditionallyOptionalDefaults<Check, Keys extends keyof RemoteAPIDefaults> 
 function throwExpression(errorMessage: string): never {
     throw new Error(errorMessage)
 }
+
+const defaultPlatform = 'ew0KCSJwbGF0Zm9ybVR5cGUiOiAiUEMiLA0KCSJwbGF0Zm9ybU9TIjogIldpbmRvd3MiLA0KCSJwbGF0Zm9ybU9TVmVyc2lvbiI6ICIxMC4wLjE5MDQyLjEuMjU2LjY0Yml0IiwNCgkicGxhdGZvcm1DaGlwc2V0IjogIlVua25vd24iDQp9'
 
 export class RemoteAPI<DefaultData extends RemoteAPIDefaults | undefined = undefined> {
     private _requestMaker: RequestMaker
@@ -39,6 +42,10 @@ export class RemoteAPI<DefaultData extends RemoteAPIDefaults | undefined = undef
         return options.puuid ?? this._requestDefaults?.puuid ?? throwExpression('No default puuid')
     }
 
+    private getVersion(options: {version?: string}): string {
+        return options.version ?? this._requestDefaults?.version ?? throwExpression('No default version')
+    }
+
     async getMatchHistory(options: ValorantMatchHistoryRequestOptions & ConditionallyOptionalDefaults<DefaultData, 'puuid' | 'shard'>): Promise<ValorantMatchHistoryResponse> {
         const params = new URLSearchParams()
         if(options.startIndex) params.set('startIndex', options.startIndex.toString())
@@ -53,6 +60,15 @@ export class RemoteAPI<DefaultData extends RemoteAPIDefaults | undefined = undef
             headers: {
                 'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement(),
                 'Authorization': 'Bearer ' + await this._credentialManager.getToken()
+            }
+        })).json()
+    }
+
+    async getContent(options: ConditionallyOptionalDefaults<DefaultData, 'version' | 'shard'>): Promise<ValorantContentResponse> {
+        return (await this._requestMaker.requestRemoteShared('content-service/v3/content', this.getShard(options), {
+            headers: {
+                'X-Riot-ClientPlatform': defaultPlatform,
+                'X-Riot-ClientVersion': this.getVersion(options)
             }
         })).json()
     }
