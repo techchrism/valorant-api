@@ -3,6 +3,7 @@ import {CredentialManager} from '../credentialManager/CredentialManager'
 import {ValorantMatchHistoryResponse} from '../types/api/pvp/ValorantMatchHistoryResponse'
 import {ValorantMatchHistoryRequestOptions} from '../types/api/pvp/ValorantMatchHistoryRequestOptions'
 import {ValorantContentResponse} from '../types/api/pvp/ValorantContentResponse'
+import {ValorantAccountXPResponse} from '../types/api/pvp/ValorantAccountXPResponse'
 
 export interface RemoteAPIDefaults {
     puuid: string
@@ -69,6 +70,15 @@ export class RemoteAPI<DefaultData extends RemoteAPIDefaults | undefined = undef
             headers: {
                 'X-Riot-ClientPlatform': defaultPlatform,
                 'X-Riot-ClientVersion': this.getVersion(options)
+            }
+        })).json()
+    }
+
+    async getAccountXP(options: ConditionallyOptionalDefaults<DefaultData, 'puuid' | 'shard'>): Promise<ValorantAccountXPResponse> {
+        return (await this._requestMaker.requestRemotePD(`account-xp/v1/players/${this.getPUUID(options)}`, this.getShard(options), {
+            headers: {
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement(),
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken()
             }
         })).json()
     }
