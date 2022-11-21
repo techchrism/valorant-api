@@ -12,6 +12,7 @@ import {ValorantLeaderboardRequestOptions} from '../types/api/pvp/ValorantLeader
 import {ValorantLeaderboardResponse} from '../types/api/pvp/ValorantLeaderboardResponse'
 import {ValorantConfigResponse} from '../types/api/pvp/ValorantConfigResponse'
 import {ValorantWalletResponse} from '../types/api/pvp/ValorantWalletResponse'
+import {ValorantPartyFetchPlayerResponse} from '../types/api/party/ValorantPartyFetchPlayerResponse'
 
 export interface RemoteAPIDefaults {
     puuid: string
@@ -41,6 +42,10 @@ export class RemoteAPI<DefaultData extends RemoteAPIDefaults | undefined = undef
         this._requestMaker = requestMaker
         this._credentialManager = credentialManager
         this._requestDefaults = requestDefaults
+    }
+
+    private getRegion(options: {region?: string}): string {
+        return options.region ?? this._requestDefaults?.region ?? throwExpression('No default region')
     }
 
     private getShard(options: {shard?: string}): string {
@@ -166,6 +171,26 @@ export class RemoteAPI<DefaultData extends RemoteAPIDefaults | undefined = undef
 
     async getWallet(options: ConditionallyOptionalDefaults<DefaultData, 'puuid' | 'shard'>): Promise<ValorantWalletResponse> {
         return (await this._requestMaker.requestRemotePD(`store/v1/wallet/${this.getPUUID(options)}`, this.getShard(options), {
+            headers: {
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement()
+            }
+        })).json()
+    }
+
+    async getPartyPlayer(options: ConditionallyOptionalDefaults<DefaultData, 'puuid' | 'shard' | 'region' | 'version'>): Promise<ValorantPartyFetchPlayerResponse> {
+        return (await this._requestMaker.requestRemoteGLZ(`parties/v1/players/${this.getPUUID(options)}`, this.getShard(options), this.getRegion(options), {
+            headers: {
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement(),
+                'X-Riot-ClientVersion': this.getVersion(options)
+            }
+        })).json()
+    }
+
+    async partyRemovePlayer(options: ConditionallyOptionalDefaults<DefaultData, 'puuid' | 'shard' | 'region'>): Promise<void> {
+        return (await this._requestMaker.requestRemoteGLZ(`parties/v1/players/${this.getPUUID(options)}`, this.getShard(options), this.getRegion(options), {
+            method: 'DELETE',
             headers: {
                 'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
                 'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement()
