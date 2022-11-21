@@ -11,6 +11,7 @@ import {ValorantCompetitiveUpdatesResponse} from '../types/api/pvp/ValorantCompe
 import {ValorantLeaderboardRequestOptions} from '../types/api/pvp/ValorantLeaderboardRequestOptions'
 import {ValorantLeaderboardResponse} from '../types/api/pvp/ValorantLeaderboardResponse'
 import {ValorantConfigResponse} from '../types/api/pvp/ValorantConfigResponse'
+import {ValorantWalletResponse} from '../types/api/pvp/ValorantWalletResponse'
 
 export interface RemoteAPIDefaults {
     puuid: string
@@ -163,4 +164,12 @@ export class RemoteAPI<DefaultData extends RemoteAPIDefaults | undefined = undef
         return (await this._requestMaker.requestRemoteShared(`v1/config/${this.getShard(options)}`, this.getShard(options))).json()
     }
 
+    async getWallet(options: ConditionallyOptionalDefaults<DefaultData, 'puuid' | 'shard'>): Promise<ValorantWalletResponse> {
+        return (await this._requestMaker.requestRemotePD(`store/v1/wallet/${this.getPUUID(options)}`, this.getShard(options), {
+            headers: {
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement()
+            }
+        })).json()
+    }
 }

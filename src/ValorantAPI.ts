@@ -60,6 +60,7 @@ function isWebsocketEvent(key: EventKey<CombinedEventType>): key is EventKey<Web
 
 type CombinedEventType = ValorantAPIEvents & WebSocketEventEmitters
 
+//TODO only return this class after initialized - extract initialization to a separate class
 export class ValorantAPI extends EventEmitter<CombinedEventType> {
     public readonly requestMaker: RequestMaker
     public readonly credentialManager: CredentialManager
