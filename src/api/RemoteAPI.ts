@@ -14,6 +14,7 @@ import {ValorantConfigResponse} from '../types/api/pvp/ValorantConfigResponse'
 import {ValorantWalletResponse} from '../types/api/pvp/ValorantWalletResponse'
 import {ValorantPartyFetchPlayerResponse} from '../types/api/party/ValorantPartyFetchPlayerResponse'
 import {ValorantPartyResponse} from '../types/api/party/ValorantPartyResponse'
+import {ValorantPartyCustomGameConfigsResponse} from '../types/api/party/ValorantPartyCustomGameConfigsResponse'
 
 export interface RemoteAPIDefaults {
     puuid: string
@@ -312,6 +313,15 @@ export class RemoteAPI<DefaultData extends RemoteAPIDefaults | undefined = undef
             headers: {
                 'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
                 'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement()
+            }
+        })).json()
+    }
+
+    async partyGetCustomGameConfig(options: ConditionallyOptionalDefaults<DefaultData, 'shard' | 'region' | 'version'>): Promise<ValorantPartyCustomGameConfigsResponse> {
+        return (await this._requestMaker.requestRemoteGLZ(`parties/v1/parties/customgameconfigs`, this.getShard(options), this.getRegion(options), {
+            headers: {
+                'X-Riot-ClientPlatform': defaultPlatform,
+                'X-Riot-ClientVersion': this.getVersion(options)
             }
         })).json()
     }
