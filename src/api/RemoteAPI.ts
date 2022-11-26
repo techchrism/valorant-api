@@ -207,4 +207,112 @@ export class RemoteAPI<DefaultData extends RemoteAPIDefaults | undefined = undef
             }
         })).json()
     }
+
+    async partySetReady(options: {partyID: string, ready: boolean} & ConditionallyOptionalDefaults<DefaultData, 'puuid' | 'shard' | 'region'>): Promise<ValorantPartyResponse> {
+        return (await this._requestMaker.requestRemoteGLZ(`parties/v1/parties/${options.partyID}/members/${this.getPUUID(options)}/setReady`,
+            this.getShard(options), this.getRegion(options), {
+            method: 'POST',
+            body: JSON.stringify({ready: options.ready}),
+            headers: {
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement()
+            }
+        })).json()
+    }
+
+    async partyChangeQueue(options: {partyID: string, queueID: string} & ConditionallyOptionalDefaults<DefaultData, 'shard' | 'region'>): Promise<ValorantPartyResponse> {
+        return (await this._requestMaker.requestRemoteGLZ(`parties/v1/parties/${options.partyID}/queue`, this.getShard(options), this.getRegion(options), {
+                method: 'POST',
+                body: JSON.stringify({queueID: options.queueID}),
+                headers: {
+                    'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                    'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement()
+                }
+            })).json()
+    }
+
+    async partyStartCustomGame(options: {partyID: string} & ConditionallyOptionalDefaults<DefaultData, 'shard' | 'region'>): Promise<ValorantPartyResponse> {
+        return (await this._requestMaker.requestRemoteGLZ(`parties/v1/parties/${options.partyID}/startcustomgame`, this.getShard(options), this.getRegion(options), {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                    'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement()
+                }
+            })).json()
+    }
+
+    async partyJoinMatchmakingQueue(options: {partyID: string} & ConditionallyOptionalDefaults<DefaultData, 'shard' | 'region'>): Promise<ValorantPartyResponse> {
+        return (await this._requestMaker.requestRemoteGLZ(`parties/v1/parties/${options.partyID}/matchmaking/join`, this.getShard(options), this.getRegion(options), {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement()
+            }
+        })).json()
+    }
+
+    async partyLeaveMatchmakingQueue(options: {partyID: string} & ConditionallyOptionalDefaults<DefaultData, 'shard' | 'region'>): Promise<ValorantPartyResponse> {
+        return (await this._requestMaker.requestRemoteGLZ(`parties/v1/parties/${options.partyID}/matchmaking/leave`, this.getShard(options), this.getRegion(options), {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement()
+            }
+        })).json()
+    }
+
+    async partySetAccessibility(options: {partyID: string, accessibility: 'OPEN' | 'CLOSED'} & ConditionallyOptionalDefaults<DefaultData, 'shard' | 'region'>): Promise<ValorantPartyResponse> {
+        return (await this._requestMaker.requestRemoteGLZ(`parties/v1/parties/${options.partyID}/accessibility`, this.getShard(options), this.getRegion(options), {
+            method: 'POST',
+            body: JSON.stringify({accessibility: options.accessibility}),
+            headers: {
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement()
+            }
+        })).json()
+    }
+
+    async partySetCustomGameSettings(options: {
+        partyID: string,
+        settings: ValorantPartyResponse['CustomGameData']['Settings']
+    } & ConditionallyOptionalDefaults<DefaultData, 'shard' | 'region'>): Promise<ValorantPartyResponse> {
+        return (await this._requestMaker.requestRemoteGLZ(`parties/v1/parties/${options.partyID}/customgamesettings`, this.getShard(options), this.getRegion(options), {
+            method: 'POST',
+            body: JSON.stringify(options.settings),
+            headers: {
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement()
+            }
+        })).json()
+    }
+
+    async partyInviteByDisplayName(options: {partyID: string, name: string, tag: string} & ConditionallyOptionalDefaults<DefaultData, 'shard' | 'region'>): Promise<ValorantPartyResponse> {
+        return (await this._requestMaker.requestRemoteGLZ(`parties/v1/parties/${options.partyID}/invites/${options.name}/${options.tag}`, this.getShard(options), this.getRegion(options), {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement()
+            }
+        })).json()
+    }
+
+    async partyRequestToJoin(options: {partyID: string} & ConditionallyOptionalDefaults<DefaultData, 'shard' | 'region'>): Promise<ValorantPartyResponse> {
+        return (await this._requestMaker.requestRemoteGLZ(`parties/v1/parties/${options.partyID}/request`, this.getShard(options), this.getRegion(options), {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement()
+            }
+        })).json()
+    }
+
+    async partyRequestDecline(options: {partyID: string, requestID: string} & ConditionallyOptionalDefaults<DefaultData, 'shard' | 'region'>): Promise<ValorantPartyResponse> {
+        return (await this._requestMaker.requestRemoteGLZ(`parties/v1/parties/${options.partyID}/request/${options.requestID}/decline`, this.getShard(options), this.getRegion(options), {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement()
+            }
+        })).json()
+    }
 }
