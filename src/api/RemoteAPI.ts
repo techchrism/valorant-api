@@ -18,6 +18,8 @@ import {ValorantPartyCustomGameConfigsResponse} from '../types/api/party/Valoran
 import {ValorantCurrentGameFetchPlayerResponse} from '../types/api/currentgame/ValorantCurrentGameFetchPlayerResponse'
 import {ValorantCurrentGameFetchMatchResponse} from '../types/api/currentgame/ValorantCurrentGameFetchMatchResponse'
 import {ValorantCurrentGameLoadoutsResponse} from '../types/api/currentgame/ValorantCurrentGameLoadoutsResponse'
+import {ValorantPregameGetPlayerResponse} from '../types/api/pregame/ValorantPregameGetPlayerResponse'
+import {ValorantPregameMatchResponse} from '../types/api/pregame/ValorantPregameMatchResponse'
 
 export interface RemoteAPIDefaults {
     puuid: string
@@ -359,6 +361,54 @@ export class RemoteAPI<DefaultData extends RemoteAPIDefaults | undefined = undef
     async quitCurrentGame(options: {matchID: string} & ConditionallyOptionalDefaults<DefaultData, 'puuid' | 'shard' | 'region'>): Promise<void> {
         return (await this._requestMaker.requestRemoteGLZ(`core-game/v1/players/${this.getPUUID(options)}/disassociate/${options.matchID}`,
             this.getShard(options), this.getRegion(options), {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement()
+            }
+        })).json()
+    }
+
+    async pregameFetchPlayer(options: ConditionallyOptionalDefaults<DefaultData, 'puuid' | 'shard' | 'region'>): Promise<ValorantPregameGetPlayerResponse> {
+        return (await this._requestMaker.requestRemoteGLZ(`pregame/v1/players/${this.getPUUID(options)}`, this.getShard(options), this.getRegion(options), {
+            headers: {
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement()
+            }
+        })).json()
+    }
+
+    async pregameFetchMatch(options: {matchID: string} & ConditionallyOptionalDefaults<DefaultData, 'shard' | 'region'>): Promise<ValorantPregameMatchResponse> {
+        return (await this._requestMaker.requestRemoteGLZ(`pregame/v1/matches/${options.matchID}`, this.getShard(options), this.getRegion(options), {
+            headers: {
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement()
+            }
+        })).json()
+    }
+
+    async pregameSelectCharacter(options: {matchID: string, characterID: string} & ConditionallyOptionalDefaults<DefaultData, 'shard' | 'region'>): Promise<ValorantPregameMatchResponse> {
+        return (await this._requestMaker.requestRemoteGLZ(`pregame/v1/matches/${options.matchID}/select/${options.characterID}`, this.getShard(options), this.getRegion(options), {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement()
+            }
+        })).json()
+    }
+
+    async pregameLockCharacter(options: {matchID: string, characterID: string} & ConditionallyOptionalDefaults<DefaultData, 'shard' | 'region'>): Promise<ValorantPregameMatchResponse> {
+        return (await this._requestMaker.requestRemoteGLZ(`pregame/v1/matches/${options.matchID}/lock/${options.characterID}`, this.getShard(options), this.getRegion(options), {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement()
+            }
+        })).json()
+    }
+
+    async pregameQuitMatch(options: {matchID: string} & ConditionallyOptionalDefaults<DefaultData, 'shard' | 'region'>): Promise<ValorantPregameMatchResponse> {
+        return (await this._requestMaker.requestRemoteGLZ(`pregame/v1/matches/${options.matchID}/quit`, this.getShard(options), this.getRegion(options), {
             method: 'POST',
             headers: {
                 'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
