@@ -15,6 +15,9 @@ import {ValorantWalletResponse} from '../types/api/pvp/ValorantWalletResponse'
 import {ValorantPartyFetchPlayerResponse} from '../types/api/party/ValorantPartyFetchPlayerResponse'
 import {ValorantPartyResponse} from '../types/api/party/ValorantPartyResponse'
 import {ValorantPartyCustomGameConfigsResponse} from '../types/api/party/ValorantPartyCustomGameConfigsResponse'
+import {ValorantCurrentGameFetchPlayerResponse} from '../types/api/currentgame/ValorantCurrentGameFetchPlayerResponse'
+import {ValorantCurrentGameFetchMatchResponse} from '../types/api/currentgame/ValorantCurrentGameFetchMatchResponse'
+import {ValorantCurrentGameLoadoutsResponse} from '../types/api/currentgame/ValorantCurrentGameLoadoutsResponse'
 
 export interface RemoteAPIDefaults {
     puuid: string
@@ -322,6 +325,44 @@ export class RemoteAPI<DefaultData extends RemoteAPIDefaults | undefined = undef
             headers: {
                 'X-Riot-ClientPlatform': defaultPlatform,
                 'X-Riot-ClientVersion': this.getVersion(options)
+            }
+        })).json()
+    }
+
+    async currentGameFetchPlayer(options: ConditionallyOptionalDefaults<DefaultData, 'puuid' | 'shard' | 'region'>): Promise<ValorantCurrentGameFetchPlayerResponse> {
+        return (await this._requestMaker.requestRemoteGLZ(`core-game/v1/players/${this.getPUUID(options)}`, this.getShard(options), this.getRegion(options), {
+            headers: {
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement()
+            }
+        })).json()
+    }
+
+    async currentGameFetchMatch(options: {matchID: string} & ConditionallyOptionalDefaults<DefaultData, 'shard' | 'region'>): Promise<ValorantCurrentGameFetchMatchResponse> {
+        return (await this._requestMaker.requestRemoteGLZ(`core-game/v1/matches/${options.matchID}`, this.getShard(options), this.getRegion(options), {
+            headers: {
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement()
+            }
+        })).json()
+    }
+
+    async currentGameGetLoadouts(options: {matchID: string} & ConditionallyOptionalDefaults<DefaultData, 'shard' | 'region'>): Promise<ValorantCurrentGameLoadoutsResponse> {
+        return (await this._requestMaker.requestRemoteGLZ(`core-game/v1/matches/${options.matchID}/loadouts`, this.getShard(options), this.getRegion(options), {
+            headers: {
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement()
+            }
+        })).json()
+    }
+
+    async quitCurrentGame(options: {matchID: string} & ConditionallyOptionalDefaults<DefaultData, 'puuid' | 'shard' | 'region'>): Promise<void> {
+        return (await this._requestMaker.requestRemoteGLZ(`core-game/v1/players/${this.getPUUID(options)}/disassociate/${options.matchID}`,
+            this.getShard(options), this.getRegion(options), {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + await this._credentialManager.getToken(),
+                'X-Riot-Entitlements-JWT': await this._credentialManager.getEntitlement()
             }
         })).json()
     }
