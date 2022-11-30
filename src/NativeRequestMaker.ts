@@ -121,14 +121,15 @@ export class NativeRequestMaker extends EE<RequestMakerEvents> implements Reques
         return true
     }
 
-    requestLocal(resource: string): Promise<Response> {
+    requestLocal(resource: string, init?: Object): Promise<Response> {
         if(!this.localReady) throw new Error('Local not ready')
 
         return fetch(`https://127.0.0.1:${this._lockfileData!.port}/${resource}`, {
             headers: {
                 'Authorization': 'Basic ' + Buffer.from(`riot:${this._lockfileData!.password}`).toString('base64')
             },
-            agent: this._localAgent
+            agent: this._localAgent,
+            ...init
         }) as unknown as Promise<Response>
     }
 

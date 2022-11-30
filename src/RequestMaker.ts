@@ -77,9 +77,10 @@ export default interface RequestMaker<T = {}> extends EE<T & RequestMakerEvents>
      * Make a local API request to the provided resource
      * To request the url "https://127.0.0.1:{lockfile port}/help", use "help" as the resource
      * @param resource The resource to request, appended to the local API base URL. Do not include a leading slash.
+     * @param init Optional init object for the fetch request
      * @returns A promise that resolves with the response object
      */
-    requestLocal(resource: string): Promise<Response>
+    requestLocal(resource: string, init?: Object): Promise<Response>
 
     /**
      * Make a remote "glz" API request to the provided resource
