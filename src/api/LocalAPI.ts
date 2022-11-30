@@ -105,4 +105,13 @@ export class LocalAPI {
         }
         return (await this._requestMaker.requestLocal(url)).json()
     }
+
+    async sendChat(cid: string, message: string, whisper: boolean): Promise<ValorantChatHistoryResponse> {
+        return (await this._requestMaker.requestLocal('chat/v6/messages', {
+            method: 'POST',
+            body: JSON.stringify({
+                cid, message, type: whisper ? 'chat' : 'groupchat'
+            })
+        })).json()
+    }
 }
