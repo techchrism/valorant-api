@@ -10,6 +10,9 @@ import {ValorantFriendsResponse} from '../types/api/local/ValorantFriendsRespons
 import {ValorantPresence, ValorantPresenceResponse} from '../types/api/local/ValorantPresenceResponse'
 import {atob} from 'iso-base64'
 import {ValorantFriendRequestsResponse} from '../types/api/local/ValorantFriendRequestsResponse'
+import {ValorantChatConversationsResponse} from '../types/api/local/ValorantChatConversationsResponse'
+import {ValorantChatParticipantsResponse} from '../types/api/local/ValorantChatParticipantsResponse'
+import {ValorantChatHistoryResponse} from '../types/api/local/ValorantChatHistoryResponse'
 
 export class LocalAPI {
     private _requestMaker: RequestMaker
@@ -65,5 +68,41 @@ export class LocalAPI {
 
     async getFriendRequests(): Promise<ValorantFriendRequestsResponse> {
         return (await this._requestMaker.requestLocal('chat/v4/friendrequests')).json()
+    }
+
+    async getPartyChatInfo(): Promise<ValorantChatConversationsResponse> {
+        return (await this._requestMaker.requestLocal('chat/v6/conversations/ares-parties')).json()
+    }
+
+    async getPregameChatInfo(): Promise<ValorantChatConversationsResponse> {
+        return (await this._requestMaker.requestLocal('chat/v6/conversations/ares-pregame')).json()
+    }
+
+    async getCurrentGameChatInfo(): Promise<ValorantChatConversationsResponse> {
+        return (await this._requestMaker.requestLocal('chat/v6/conversations/ares-coregame')).json()
+    }
+
+    async getChatInfo(): Promise<ValorantChatConversationsResponse> {
+        return (await this._requestMaker.requestLocal('chat/v6/conversations/')).json()
+    }
+
+    async getChatParticipants(cid?: string): Promise<ValorantChatParticipantsResponse> {
+        let url = 'chat/v5/participants'
+        if(cid) {
+            const params = new URLSearchParams()
+            params.set('cid', cid)
+            url += '?' + params.toString()
+        }
+        return (await this._requestMaker.requestLocal(url)).json()
+    }
+
+    async getChatHistory(cid?: string): Promise<ValorantChatHistoryResponse> {
+        let url = 'chat/v6/messages'
+        if(cid) {
+            const params = new URLSearchParams()
+            params.set('cid', cid)
+            url += '?' + params.toString()
+        }
+        return (await this._requestMaker.requestLocal(url)).json()
     }
 }
